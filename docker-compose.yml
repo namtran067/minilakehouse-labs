@@ -46,6 +46,8 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL:-https://minio-lab.nada.io.vn}
+      MINIO_SERVER_URL: "http://minio:9000"
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
@@ -54,6 +56,7 @@ services:
         condition: service_completed_successfully
     networks:
       - iceberg-net
+      - dokploy-network
     healthcheck:
       test: ["CMD", "curl", "http://127.0.0.1:9000/minio/health/live"]
       interval: 1s
@@ -183,6 +186,7 @@ services:
         exec jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --ServerApp.token="${JUPYTER_TOKEN}" --ServerApp.allow_origin='*'
     networks:
       - iceberg-net
+      - dokploy-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8888/api"]
       interval: 10s
@@ -227,10 +231,13 @@ services:
         condition: service_completed_successfully
     networks:
       - iceberg-net
+      - dokploy-network
 
 networks:
   iceberg-net:
     driver: bridge
+  dokploy-network:
+    external: true
 
 volumes:
   trino_catalog:
