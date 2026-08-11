@@ -48,7 +48,7 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     command: server /data --console-address ":9001"
     volumes:
-      - ./data/minio:/data
+      - minio_data:/data
     depends_on:
       check-resources:
         condition: service_completed_successfully
@@ -77,7 +77,7 @@ services:
       polaris.realm-context.realms: "POLARIS"
       quarkus.otel.sdk.disabled: "true"
     volumes:
-      - ./data/polaris:/var/polaris
+      - polaris_data:/var/polaris
     depends_on:
       minio:
         condition: service_healthy
@@ -161,7 +161,7 @@ services:
       - SPARK_CONF_DIR=/home/jovyan/.sparkconf
     volumes:
       - ./notebooks:/home/jovyan/work
-      - ./data/jupyter:/data/jupyter
+      - jupyter_data:/data/jupyter
       - ./spark-defaults.conf.template:/tmp/spark-defaults.conf.template:ro
       - ./generate-spark-config.py:/tmp/generate-spark-config.py:ro
       - ./jars:/opt/spark-jars:ro
@@ -217,7 +217,7 @@ services:
     volumes:
       - trino_catalog:/etc/trino/catalog
       - ./trino/config:/etc/trino
-      - ./data/trino:/data/trino
+      - trino_data:/data/trino
     depends_on:
       trino-config:
         condition: service_completed_successfully
@@ -234,3 +234,7 @@ networks:
 
 volumes:
   trino_catalog:
+  minio_data:
+  polaris_data:
+  jupyter_data:
+  trino_data:
