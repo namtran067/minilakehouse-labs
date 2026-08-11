@@ -50,5 +50,10 @@ test-summary.md
 Thumbs.db
 
 # Init script output (can be regenerated)
-# Note: .env file is intentionally NOT ignored so it's committed with default versions
+
+# Secrets — never commit real .env
+.env
+
+# Trino catalog config rendered from .env by the trino-config init container
+trino/catalog/polaris.properties
 

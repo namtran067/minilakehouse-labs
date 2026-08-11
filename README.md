@@ -124,12 +124,15 @@ docker compose logs -f          # follow logs until ready (1-2 min), then Ctrl+C
 
 Then open:
 
-| Service              | URL                   | Credentials                     |
-| -------------------- | --------------------- | ------------------------------- |
-| Jupyter (start here) | http://localhost:8888 | none                            |
-| MinIO Console        | http://localhost:9001 | `admin` / `password`            |
-| Trino UI             | http://localhost:8080 | `admin` / none                  |
-| Polaris API          | http://localhost:8181 | client `root` / secret `s3cr3t` |
+| Service              | URL                   | Credentials                            |
+| -------------------- | --------------------- | -------------------------------------- |
+| Jupyter (start here) | http://localhost:8888 | token from `.env` (`JUPYTER_TOKEN`)    |
+| MinIO Console        | http://localhost:9001 | from `.env` (`MINIO_ROOT_*`)           |
+| Trino UI             | http://localhost:8080 | `admin` / none (proxy basic-auth rec.) |
+| Polaris API          | http://localhost:8181 | from `.env` (`POLARIS_CLIENT_*`)       |
+
+All credentials live in `.env` (gitignored). Copy `.env.example` → `.env` and set
+strong values before first run.
 
 Open the demo notebook directly:
 http://localhost:8888/lab/tree/work/E1.1%20-%20OpenLakehouse.ipynb
@@ -512,11 +515,12 @@ docker compose up -d --build
 ## Notes
 
 - All services communicate over the `iceberg-net` Docker bridge network.
-- Jupyter has no password — fine for local use, not for production.
+- Jupyter requires a token (`JUPYTER_TOKEN` in `.env`) — never run without it on a
+  network you don't fully control.
 - Polaris persistence is in-memory — restart-safe only with `docker compose down`
-  (no `-v`). Removing volumes wipes the catalog.
-- The default Polaris client secret `s3cr3t` is committed in `.env` for lab
-  convenience; rotate it for any non-local deployment.
+  (no `-v`). Removing volumes wipes the catalog (re-run the notebooks to rebuild).
+- All secrets (MinIO, Polaris, Jupyter) are generated in `.env`, which is
+  gitignored. `.env.example` is the committed template.
 
 ## Additional resources
 

@@ -45,7 +45,9 @@ env_vars = [
     'SCALA_VERSION',
     'AWS_SDK_VERSION',
     'POLARIS_CLIENT_ID',
-    'POLARIS_CLIENT_SECRET'
+    'POLARIS_CLIENT_SECRET',
+    'MINIO_ROOT_USER',
+    'MINIO_ROOT_PASSWORD'
 ]
 
 for key in env_vars:

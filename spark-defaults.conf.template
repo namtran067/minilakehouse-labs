@@ -37,15 +37,15 @@ spark.sql.defaultCatalog=polaris
 
 # Storage Component Configuration for MinIO (using S3FileIO)
 spark.sql.catalog.polaris.s3.endpoint=http://minio:9000
-spark.sql.catalog.polaris.s3.access-key-id=admin
-spark.sql.catalog.polaris.s3.secret-access-key=password
+spark.sql.catalog.polaris.s3.access-key-id=${MINIO_ROOT_USER}
+spark.sql.catalog.polaris.s3.secret-access-key=${MINIO_ROOT_PASSWORD}
 spark.sql.catalog.polaris.s3.path-style-access=true
 
 # Fallback Hadoop S3A configuration for non-Iceberg operations
 spark.hadoop.fs.s3.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
 spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
 spark.hadoop.fs.s3a.endpoint=http://minio:9000
-spark.hadoop.fs.s3a.access.key=admin
-spark.hadoop.fs.s3a.secret.key=password
+spark.hadoop.fs.s3a.access.key=${MINIO_ROOT_USER}
+spark.hadoop.fs.s3a.secret.key=${MINIO_ROOT_PASSWORD}
 spark.hadoop.fs.s3a.path.style.access=true
 spark.hadoop.fs.s3a.connection.ssl.enabled=false

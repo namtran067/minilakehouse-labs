@@ -44,8 +44,8 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: admin
-      MINIO_ROOT_PASSWORD: password
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     command: server /data --console-address ":9001"
     volumes:
       - ./data/minio:/data
@@ -70,10 +70,10 @@ services:
       JAVA_DEBUG: "true"
       JAVA_DEBUG_PORT: "*:5005"
       AWS_REGION: us-west-2
-      AWS_ACCESS_KEY_ID: admin
-      AWS_SECRET_ACCESS_KEY: password
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
       # Bootstrap credentials: REALM,CLIENT_ID,CLIENT_SECRET
-      POLARIS_BOOTSTRAP_CREDENTIALS: "POLARIS,root,s3cr3t"
+      POLARIS_BOOTSTRAP_CREDENTIALS: "POLARIS,${POLARIS_CLIENT_ID},${POLARIS_CLIENT_SECRET}"
       polaris.realm-context.realms: "POLARIS"
       quarkus.otel.sdk.disabled: "true"
     volumes:
@@ -102,7 +102,7 @@ services:
       - "-c"
       - >-
         echo Creating MinIO bucket...;
-        mc alias set pol http://minio:9000 admin password;
+        mc alias set pol http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
         mc mb pol/warehouse || true;
         mc ls pol;
         echo Bucket setup complete.
@@ -117,8 +117,10 @@ services:
       polaris:
         condition: service_healthy
     environment:
-      - CLIENT_ID=root
-      - CLIENT_SECRET=s3cr3t
+      - CLIENT_ID=${POLARIS_CLIENT_ID}
+      - CLIENT_SECRET=${POLARIS_CLIENT_SECRET}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     volumes:
       - ./polaris:/setup
     entrypoint: "/bin/sh"
@@ -152,6 +154,9 @@ services:
       - AWS_SDK_VERSION=${AWS_SDK_VERSION}
       - POLARIS_CLIENT_ID=${POLARIS_CLIENT_ID}
       - POLARIS_CLIENT_SECRET=${POLARIS_CLIENT_SECRET}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN}
       - AWS_REGION=irrelevant
       - SPARK_CONF_DIR=/home/jovyan/.sparkconf
     volumes:
@@ -175,7 +180,7 @@ services:
           python3 -c "import socket; s=socket.socket(); s.connect(('localhost', 15002)); s.close()" 2>/dev/null && break || sleep 2
         done
         echo 'Spark Connect server is ready'
-        exec jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token='' --NotebookApp.password='' --NotebookApp.allow_origin='*'
+        exec jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --ServerApp.token="${JUPYTER_TOKEN}" --ServerApp.allow_origin='*'
     networks:
       - iceberg-net
     healthcheck:
@@ -185,6 +190,24 @@ services:
       retries: 5
       start_period: 180s
 
+  # Render Trino catalog config from .env (Trino can't substitute env vars itself)
+  trino-config:
+    image: alpine:latest
+    container_name: trino-config
+    environment:
+      - POLARIS_CLIENT_ID=${POLARIS_CLIENT_ID}
+      - POLARIS_CLIENT_SECRET=${POLARIS_CLIENT_SECRET}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./trino/catalog/polaris.properties.tpl:/tpl/polaris.properties.tpl:ro
+      - trino_catalog:/out
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - "apk add --no-cache gettext >/dev/null 2>&1 && envsubst </tpl/polaris.properties.tpl >/out/polaris.properties && echo 'Rendered trino/catalog/polaris.properties from .env'"
+    networks:
+      - iceberg-net
+
   # Trino
   trino:
     image: trinodb/trino:${TRINO_VERSION}
@@ -192,10 +215,12 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./trino/catalog:/etc/trino/catalog
+      - trino_catalog:/etc/trino/catalog
       - ./trino/config:/etc/trino
       - ./data/trino:/data/trino
     depends_on:
+      trino-config:
+        condition: service_completed_successfully
       polaris:
         condition: service_healthy
       polaris-setup:
@@ -206,3 +231,6 @@ services:
 networks:
   iceberg-net:
     driver: bridge
+
+volumes:
+  trino_catalog:
