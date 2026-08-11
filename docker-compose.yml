@@ -183,7 +183,7 @@ services:
           python3 -c "import socket; s=socket.socket(); s.connect(('localhost', 15002)); s.close()" 2>/dev/null && break || sleep 2
         done
         echo 'Spark Connect server is ready'
-        exec jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --notebook-dir=/home/jovyan/work --ServerApp.token="${JUPYTER_TOKEN}" --ServerApp.allow_origin='*'
+        exec jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --ServerApp.token="${JUPYTER_TOKEN}" --ServerApp.allow_origin='*'
     networks:
       - iceberg-net
       - dokploy-network
@@ -208,7 +208,7 @@ services:
       - trino_catalog:/out
     entrypoint: ["/bin/sh", "-c"]
     command:
-      - "rm -f /out/password.db && apk add --no-cache gettext >/dev/null 2>&1 && envsubst </tpl/polaris.properties.tpl >/out/polaris.properties && echo 'Rendered trino/catalog/polaris.properties from .env'"
+      - "apk add --no-cache gettext >/dev/null 2>&1 && envsubst </tpl/polaris.properties.tpl >/out/polaris.properties && echo 'Rendered trino/catalog/polaris.properties from .env'"
     networks:
       - iceberg-net
 
