@@ -208,7 +208,7 @@ services:
       - trino_catalog:/out
     entrypoint: ["/bin/sh", "-c"]
     command:
-      - "apk add --no-cache gettext >/dev/null 2>&1 && envsubst </tpl/polaris.properties.tpl >/out/polaris.properties && echo 'Rendered trino/catalog/polaris.properties from .env'"
+      - "rm -f /out/password.db && apk add --no-cache gettext >/dev/null 2>&1 && envsubst </tpl/polaris.properties.tpl >/out/polaris.properties && echo 'Rendered trino/catalog/polaris.properties from .env'"
     networks:
       - iceberg-net
 
