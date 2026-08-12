@@ -137,8 +137,15 @@ services:
       - iceberg-net
 
   # Jupyter Notebook with PySpark and Iceberg (Spark Connect architecture)
+  # Built from docker/Dockerfile.jupyter — notebooks + scripts baked into image
+  # (bind mounts don't work reliably on PaaS like Dokploy)
   jupyter:
-    image: quay.io/jupyter/pyspark-notebook:spark-${SPARK_VERSION}
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.jupyter
+      args:
+        SPARK_VERSION: ${SPARK_VERSION}
+    image: minilakehouse-jupyter:latest
     container_name: jupyter-spark
     ports:
       - "8888:8888"
@@ -163,11 +170,7 @@ services:
       - AWS_REGION=irrelevant
       - SPARK_CONF_DIR=/home/jovyan/.sparkconf
     volumes:
-      - ./notebooks:/home/jovyan/work
       - jupyter_data:/data/jupyter
-      - ./spark-defaults.conf.template:/tmp/spark-defaults.conf.template:ro
-      - ./generate-spark-config.py:/tmp/generate-spark-config.py:ro
-      - ./jars:/opt/spark-jars:ro
     command:
       - bash
       - -c
@@ -175,7 +178,6 @@ services:
         set -e
         mkdir -p /home/jovyan/.sparkconf
         python3 /tmp/generate-spark-config.py /home/jovyan/.sparkconf/spark-defaults.conf
-        pip install --quiet pyiceberg[pyarrow,pandas] trino sqlalchemy matplotlib seaborn requests boto3
         echo 'Starting Spark Connect server...'
         (unset SPARK_REMOTE && /usr/local/spark/bin/spark-submit --class org.apache.spark.sql.connect.service.SparkConnectServer --master 'local[*]' --conf spark.testing=true > /tmp/spark-connect.log 2>&1) &
         echo 'Waiting for Spark Connect server on port 15002...'

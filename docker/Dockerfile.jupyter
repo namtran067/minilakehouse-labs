@@ -1,0 +1,18 @@
+# Jupyter image with notebooks + scripts baked in (no bind mounts needed)
+# Solves: bind mount ./notebooks doesn't deliver files on PaaS like Dokploy
+ARG SPARK_VERSION=4.0.1
+FROM quay.io/jupyter/pyspark-notebook:spark-${SPARK_VERSION}
+
+USER root
+
+# Bake notebooks directly into the image
+COPY --chown=1000:100 notebooks/ /home/jovyan/work/
+
+# Bake Spark config template + generator (used at container boot)
+COPY spark-defaults.conf.template /tmp/spark-defaults.conf.template
+COPY generate-spark-config.py /tmp/generate-spark-config.py
+
+# Pre-install Python deps (saves ~2 min on every boot)
+RUN pip install --quiet pyiceberg[pyarrow,pandas] trino sqlalchemy matplotlib seaborn requests boto3
+
+USER ${NB_UID:-1000}
